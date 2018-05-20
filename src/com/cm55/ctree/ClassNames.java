@@ -1,6 +1,7 @@
 package com.cm55.ctree;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 import java.util.jar.*;
 import java.util.stream.*;
@@ -13,7 +14,10 @@ import java.util.stream.*;
  */
 public class ClassNames {
 
+  /** 読み出し元のフォルダもしくはjarファイル。ただし一つにまとめられた場合はnull */
   File file;  
+  
+  /** 読み出したすべてのJavaクラス名 */
   Set<String>nameSet;
   
   private ClassNames() {
@@ -25,12 +29,48 @@ public class ClassNames {
     this.nameSet = names; 
   }
 
+  public File getFile() {
+    return file;
+  }
+  
   public Stream<String>getNameSet() {
     return nameSet.stream();
   }
+
+  /** 
+   * 指定クラスが所属するURLクラスローダのクラスパスに登録されたすべてのフォルダあるいはjarファイルを読み出し
+   * {@link ClassNames}のリストを返す。
+   * ※一般にJava9ではシステムクラスローダがURLクラスローダでは無いのでこれは使用できない。代替の方法は現在不明
+   * @param clazz
+   * @return
+   * @throws IOException
+   */
+  public static List<ClassNames>loadAllFor(Class<?>clazz) throws IOException {
+    return load((URLClassLoader)clazz.getClassLoader());
+  }
+  
+  /** 指定クラスが所属するフォルダあるいはjarファイルを読み出し{@link ClassNames}を作成する */
+  public static ClassNames loadFor(Class<?>clazz) throws IOException {
+    return load(ClassPathLocator.getLocation(clazz));
+  }
   
   /**
-   * フォルダあるいはJarファイルから読み出して{@link ClassNames}を作成する
+   * URLクラスローダに登録されたすべてのフォルダあるいはjarファイルを読み出し{@link ClassNames}のリストを作成する
+   * @param file
+   * @return
+   * @throws IOException
+   */
+  public static List<ClassNames>load(URLClassLoader cl) throws IOException {
+    List<ClassNames>classNamesList = new ArrayList<>();
+    for (URL url: cl.getURLs()) {
+      File file = new File(URLDecoder.decode(url.getFile(), System.getProperty("file.encoding")));
+      classNamesList.add(load(file));
+    }
+    return classNamesList;
+  }
+  
+  /**
+   * フォルダあるいはJarファイルを読み出し{@link ClassNames}を作成する
    * @param file
    * @return
    * @throws IOException
