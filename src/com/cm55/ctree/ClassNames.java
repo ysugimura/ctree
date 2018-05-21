@@ -46,12 +46,7 @@ public class ClassNames {
    * @throws IOException
    */
   public static List<ClassNames>loadAllFor(Class<?>clazz) throws IOException {
-    return load((URLClassLoader)clazz.getClassLoader());
-  }
-  
-  /** 指定クラスが所属するフォルダあるいはjarファイルを読み出し{@link ClassNames}を作成する */
-  public static ClassNames loadFor(Class<?>clazz) throws IOException {
-    return load(ClassPathLocator.getLocation(clazz));
+    return loadAllFor((URLClassLoader)clazz.getClassLoader());
   }
   
   /**
@@ -60,13 +55,18 @@ public class ClassNames {
    * @return
    * @throws IOException
    */
-  public static List<ClassNames>load(URLClassLoader cl) throws IOException {
+  public static List<ClassNames>loadAllFor(URLClassLoader cl) throws IOException {
     List<ClassNames>classNamesList = new ArrayList<>();
     for (URL url: cl.getURLs()) {
       File file = new File(URLDecoder.decode(url.getFile(), System.getProperty("file.encoding")));
       classNamesList.add(load(file));
     }
     return classNamesList;
+  }
+  
+  /** 指定クラスが所属するフォルダあるいはjarファイルを読み出し{@link ClassNames}を作成する */
+  public static ClassNames loadFor(Class<?>clazz) throws IOException {
+    return load(ClassPathLocator.getLocation(clazz));
   }
   
   /**

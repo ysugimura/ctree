@@ -1,35 +1,39 @@
 package com.cm55.ctree;
 
 import java.util.*;
-import java.util.stream.*;
 
 /** 
- * パッケージノードのマップ
- * 
+ * Javaクラス名一覧をツリー構造に変換する。
+ * ツリーノードの作成には{@link TreeAdapter}を用いる。
  * @author ysugimura
  */
 public class TreeCreator<P, C> {
 
+  /** ツリー構築アダプタ */
   TreeAdapter<P, C>adapter;
   
   /** パッケージのフルパス/ノードのマップ */
-  Map<String, P>map = new HashMap<>();
+  Map<String, P>packageMap = new HashMap<>();
   
+  /** アダプタを指定する */
   public TreeCreator(TreeAdapter<P, C>adapter) {
     this.adapter = adapter;
-    map.put("",  adapter.createPackage(""));
+    packageMap.put("",  adapter.createPackage(""));
   }
-  
+
+  /** パッケージルートを取得する */
   public P getRoot() {
-    return map.get("");
+    return packageMap.get("");
   }
   
-  /** スラッシュ区切りのパッケージパスを指定する。 */
+  /** 
+   * 指定されたパッケージのノードを取得する。なければ作成する。
+   * スラッシュ区切りのパッケージパスを指定する。 */
   public P ensurePackage(String fullPath) {
     if (fullPath.startsWith(".") || fullPath.endsWith(".")) throw new IllegalArgumentException();
     
     // このパスのノードがある
-    P node = map.get(fullPath);
+    P node = packageMap.get(fullPath);
     if (node != null) return node;
     
     // 無い。一つ上のノードを探す
@@ -49,10 +53,11 @@ public class TreeCreator<P, C> {
     child = adapter.createPackage(childName);    
 
     adapter.addPackageChild(parent, child);
-    map.put(fullPath, child);
+    packageMap.put(fullPath, child);
     return child;
   }
-  
+
+  /** 指定されたクラスノードを作成する */
   public C createClassNode(String className) {
     int index = className.lastIndexOf('.');
     String packageName = "";
@@ -65,13 +70,10 @@ public class TreeCreator<P, C> {
     return classNode;
   }
   
-  @Override
-  public String toString() {
-    return 
-    map.entrySet().stream()
-          .sorted((a, b)->a.getKey().compareTo(b.getKey()))
-          .map(e->e.getKey() + "=" + e.getValue())
-          .collect(Collectors.joining("\n"));
+  /** {@link ClassNames}からツリー構造を作成し、ルートノードを返す */
+  public static <P, C>P createTree(ClassNames classNames, TreeAdapter<P, C>adapter) {
+    TreeCreator<P, C> creator = new TreeCreator<P, C>(adapter);
+    classNames.getNameSet().forEach(n->creator.createClassNode(n));
+    return creator.getRoot();
   }
-
 }

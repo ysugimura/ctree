@@ -30,7 +30,7 @@ class ClassPathLocator {
     URL classUrl = clazz.getResource(clazz.getSimpleName() + ".class");
     
     // ドットの数を数えて、このクラスのパッケージ階層数を取得する。
-    int pkgHier =  (int)ClassPathLocator.class.getName().chars().filter(c->c == '.').count();
+    int pkgHier =  (int)clazz.getName().chars().filter(c->c == '.').count();
     
     // このクラスの格納されているjarファイルを取得する。jarでない場合（開発環境の場合）はnullを返す。
     return getLocationFromClassUrl(classUrl, pkgHier);
