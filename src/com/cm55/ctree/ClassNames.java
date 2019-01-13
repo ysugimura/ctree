@@ -1,5 +1,7 @@
 package com.cm55.ctree;
 
+import static com.cm55.ctree.LambdaExceptionUtil.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -46,7 +48,39 @@ public class ClassNames {
    * @throws IOException
    */
   public static List<ClassNames>loadAllFor(Class<?>clazz) throws IOException {
-    return loadAllFor((URLClassLoader)clazz.getClassLoader());
+    URLClassLoader cl = null;
+    try {
+      // Java9以上ではエラーになる。
+      cl = (URLClassLoader)clazz.getClassLoader();         
+    } catch (Exception ex) {      
+    }
+    if (cl != null) {
+      return loadAllFor((URLClassLoader)clazz.getClassLoader());
+    }
+    return loadAllFor9();
+  }
+  
+  /**
+   * Java9以上ですべてのクラスパスのすべてのclassを取得する。
+   * @return
+   * @throws IOException
+   */
+  public static List<ClassNames>loadAllFor9() throws IOException {
+    return loadAllFor(
+        Arrays.stream(System.getProperty("java.class.path")
+            .split(File.pathSeparator)).map(path->new File(path)).collect(Collectors.toList())
+     );    
+  }
+  
+  /**
+   * 指定されたすべてのクラスパスを読み出し、{@link ClassNames}のリストを作成する
+   * @param paths
+   * @return
+   */
+  public static List<ClassNames>loadAllFor(Collection<File>files) throws IOException {
+    List<ClassNames>classNamesList = new ArrayList<>();
+    files.stream().forEach(rethrowConsumer(file->classNamesList.add(load(file))));
+    return classNamesList;
   }
   
   /**
@@ -56,12 +90,10 @@ public class ClassNames {
    * @throws IOException
    */
   public static List<ClassNames>loadAllFor(URLClassLoader cl) throws IOException {
-    List<ClassNames>classNamesList = new ArrayList<>();
-    for (URL url: cl.getURLs()) {
-      File file = new File(URLDecoder.decode(url.getFile(), System.getProperty("file.encoding")));
-      classNamesList.add(load(file));
-    }
-    return classNamesList;
+    List<File>files = Arrays.stream(cl.getURLs())
+      .map(rethrowFunction(url->new File(URLDecoder.decode(url.getFile(), System.getProperty("file.encoding")))))
+      .collect(Collectors.toList());
+    return loadAllFor(files);
   }
   
   /** 指定クラスが所属するフォルダあるいはjarファイルを読み出し{@link ClassNames}を作成する */
